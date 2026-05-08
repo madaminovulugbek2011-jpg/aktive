@@ -1,0 +1,53 @@
+name: Super Realistic 70 Days Activity
+
+on:
+  workflow_dispatch:
+
+jobs:
+  backdate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Activity
+        run: |
+          git config --local user.email "komilatech12@gmail.com"
+          git config --local user.name "komilatech"
+          
+          # Bo'sh fayl yaratish yoki borini ochish
+          touch activity.log
+          
+          for i in {70..0}
+          do
+            # Sanani formatlash (Ubuntu/Debian mos)
+            CURRENT_DATE=$(date -d "$i days ago" +%Y-%m-%d)
+            DAY_OF_WEEK=$(date -d "$CURRENT_DATE" +%u)
+            
+            # Ish kunlari 1-5, Dam olish 6-7
+            if [ $DAY_OF_WEEK -le 5 ]; then THRESHOLD=30; else THRESHOLD=85; fi
+            
+            if [ $((RANDOM % 100)) -gt $THRESHOLD ]; then
+                COMMIT_COUNT=$((1 + RANDOM % 5))
+                for j in $(seq 1 $COMMIT_COUNT)
+                do
+                  HOUR=$(printf "%02d" $((9 + RANDOM % 11)))
+                  MIN=$(printf "%02d" $((10 + RANDOM % 45)))
+                  FULL_DATE="${CURRENT_DATE}T${HOUR}:${MIN}:00"
+                  
+                  echo "Update: $FULL_DATE" >> activity.log
+                  git add activity.log
+                  GIT_AUTHOR_DATE="$FULL_DATE" GIT_COMMITTER_DATE="$FULL_DATE" \
+                  git commit -m "chore: background task update $j" --quiet
+                done
+            fi
+          done
+          
+          # Force push orqali o'tmishdagi sanalarni yozish
+          git push origin main
